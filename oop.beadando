@@ -1,0 +1,145 @@
+from abc import ABC, abstractmethod
+from datetime import datetime, timedelta
+
+
+
+class Room(ABC):
+    def __init__(self, room_number, price):
+        self.room_number = room_number
+        self.price = price
+
+    @abstractmethod
+    def print_info(self):
+        pass
+
+
+class Hotel:
+    def __init__(self, name):
+        self.name = name
+        self.rooms = []
+        self.bookings = {}
+
+    def add_room(self, room):
+        self.rooms.append(room)
+
+    def book(self, room_number, date, room_type):
+        if room_number not in self.bookings:
+            if self._is_valid_date(date):
+                if room_type == "Single":
+                    price = 30000
+                elif room_type == "Double":
+                    price = 50000
+                else:
+                    return None, None
+                self.bookings[room_number] = {date: price}
+                return room_number, room_type
+        elif date not in self.bookings[room_number] and self._is_valid_date(date):
+            if room_type == "Single":
+                price = 30000
+            elif room_type == "Double":
+                price = 50000
+            else:
+                return None, None
+            self.bookings[room_number][date] = price
+            return room_number, room_type
+        else:
+            return None, None
+
+    def cancel(self, room_number, date):
+        if room_number in self.bookings and date in self.bookings[room_number]:
+            del self.bookings[room_number][date]
+            if not self.bookings[room_number]:
+                del self.bookings[room_number]
+            return True
+        else:
+            return False
+
+    def list_bookings(self):
+        print("Foglalások a(z) " + self.name + " szállodában:")
+        for room_number, bookings in self.bookings.items():
+            for date, price in bookings.items():
+                room_type = "Single" if price == 30000 else "Double"
+                print(f"Foglalás - Szobaszám: {room_number} - Dátum: {date} - Típus: {room_type} - Ár: {price}")
+
+    def _is_valid_date(self, date):
+        try:
+            date_obj = datetime.strptime(date, "%Y-%m-%d")
+            return date_obj >= datetime.today() - timedelta(days=1)
+        except ValueError:
+            return False
+
+def menu():
+    print("1. Foglalás")
+    print("2. Lemondás")
+    print("3. Foglalások listázása")
+    print("4. Kilépés")
+
+
+def main():
+    print("Üdvözöljük a Hotel Példa foglalási rendszerében!")
+    hotel = Hotel("Hotel Példa")
+
+    initial_bookings = {
+        "101": {"2024-07-23": 30000},
+        "102": {"2024-07-24": 50000},
+        "201": {"2024-07-25": 30000},
+        "301": {"2024-07-26": 30000},
+        "302": {"2024-07-27": 50000}
+    }
+    hotel.bookings = initial_bookings
+
+    while True:
+        menu()
+        choice = input("Kérem válasszon egy opciót (1-4): ")
+
+        if choice == "1":
+            room_number = input("Kérem adja meg a szobaszámot: ")
+
+            # Dátum bekérése és ellenőrzése
+            while True:
+                date = input("Kérem adja meg a foglalás dátumát (ÉÉÉÉ-HH-NN formátumban): ")
+                if hotel._is_valid_date(date) and datetime.strptime(date, "%Y-%m-%d") != datetime.today():
+                    break
+                else:
+                    print("Hibás dátum! Kérem adjon meg egy érvényes dátumot, ami nem mai.")
+
+            while True:
+                room_type = input("Kérem adja meg hány ágyas szobát kér (1 vagy 2): ")
+                if room_type in ["1", "2"]:
+                    break
+                else:
+                    print("Hibás választás. Kérem válasszon 1 vagy 2-t.")
+
+            if room_type == "1":
+                room_type = "Single"
+            elif room_type == "2":
+                room_type = "Double"
+            booking, room_type = hotel.book(room_number, date, room_type)
+
+            if booking is not None:
+                print(f"Sikeres foglalás! Az ár: {hotel.bookings[booking][date]}")
+            else:
+                print("Hiba: Nem sikerült foglalni, mert az adott szobára és dátumra már van foglalás.")
+
+        elif choice == "2":
+            room_number = input("Kérem adja meg a lemondani kívánt foglalás szobaszámát: ")
+            date = input("Kérem adja meg a lemondani kívánt foglalás dátumát (ÉÉÉÉ-HH-NN formátumban): ")
+
+            if hotel.cancel(room_number, date):
+                print("Sikeres lemondás!")
+            else:
+                print("Hiba: Nem található ilyen foglalás.")
+
+        elif choice == "3":
+            hotel.list_bookings()
+
+        elif choice == "4":
+            print("Köszönjük, hogy választotta a Hotel Példa foglalási rendszerét!")
+            break
+
+        else:
+            print("Hibás választás. Válasszon 1 és 4 közötti értéket.")
+
+
+if __name__ == "__main__":
+    main()
